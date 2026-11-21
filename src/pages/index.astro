@@ -1,0 +1,53 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { getCollection } from 'astro:content';
+
+const posts = await getCollection('blog', ({ data }) => {
+  return import.meta.env.PROD ? !data.draft : true;
+});
+
+posts.sort((a, b) => b.data.pubDatetime.getTime() - a.data.pubDatetime.getTime());
+---
+
+<Layout title="Home">
+  <section class="space-y-8">
+    <div class="space-y-2">
+      <h1 class="text-2xl font-bold text-white tracking-tight">Recent Posts</h1>
+      <p class="text-sm text-gray-400">로컬 메모와 커밋 로그 기반으로 자동 생성·사후 검수된 엔지니어링 기록입니다.</p>
+    </div>
+
+    <div class="divide-y divide-gray-800">
+      {posts.length === 0 ? (
+        <p class="py-8 text-gray-500 text-sm font-mono">등록된 글이 없습니다.</p>
+      ) : (
+        posts.map((post) => (
+          <article class="py-6 group">
+            <div class="flex items-center gap-2 text-xs text-gray-400 tabular-nums mb-1.5 font-mono">
+              <time datetime={post.data.pubDatetime.toISOString()}>
+                {post.data.pubDatetime.toISOString().slice(0, 10)}
+              </time>
+              {post.data.draft && (
+                <span class="bg-yellow-900/60 text-yellow-300 px-1.5 py-0.5 rounded text-[10px] font-mono">
+                  DRAFT
+                </span>
+              )}
+            </div>
+            <h2 class="text-lg font-semibold text-white group-hover:text-blue-400 transition">
+              <a href={`/posts/${post.slug}/`}>{post.data.title}</a>
+            </h2>
+            <p class="text-sm text-gray-400 mt-2 line-clamp-2 leading-relaxed">
+              {post.data.description}
+            </p>
+            <div class="flex flex-wrap gap-1.5 mt-3">
+              {post.data.tags.map((tag) => (
+                <span class="text-xs font-mono text-blue-400 bg-blue-950/40 border border-blue-900/50 px-2 py-0.5 rounded">
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          </article>
+        ))
+      )}
+    </div>
+  </section>
+</Layout>

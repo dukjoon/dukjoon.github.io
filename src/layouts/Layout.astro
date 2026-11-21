@@ -1,0 +1,43 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = 'Dukjoon Engineering & Architecture Log' } = Astro.props;
+---
+
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title} | dukjoon.github.io</title>
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body class="bg-[#0d1117] text-[#e6edf3] font-sans antialiased">
+    <div class="max-w-3xl mx-auto px-4 py-8 flex-1 flex flex-col w-full">
+      <header class="border-b border-gray-800 pb-6 mb-8 flex justify-between items-center">
+        <div>
+          <a href="/" class="text-xl font-bold tracking-tight text-white hover:text-blue-400 transition">
+            dukjoon.github.io
+          </a>
+          <p class="text-xs text-gray-400 mt-1 font-mono">Autonomous Systems & Engineering Log</p>
+        </div>
+        <nav class="flex gap-4 text-sm text-gray-400">
+          <a href="/" class="hover:text-white transition">Posts</a>
+          <a href="https://github.com/dukjoon" target="_blank" rel="noreferrer" class="hover:text-white transition">GitHub</a>
+        </nav>
+      </header>
+      <main class="flex-1">
+        <slot />
+      </main>
+      <footer class="border-t border-gray-800 pt-6 mt-12 text-xs text-gray-500 text-center font-mono">
+        &copy; {new Date().getFullYear()} Dukjoon. Built with Astro & GitHub Pages.
+      </footer>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,19 @@
+@import url('https://cdn.jsdelivr.net/gh/noonnu/nanum-square-neo@1.0/nanumsquareneo.css');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'NanumSquareNeo', system-ui, -apple-system, sans-serif;
+    font-feature-settings: "tnum" 1, "cv05" 1;
+    font-variant-numeric: tabular-nums;
+    background-color: #0d1117;
+    color: #e6edf3;
+  }
+
+  body {
+    @apply antialiased min-h-screen flex flex-col;
+  }
+}
