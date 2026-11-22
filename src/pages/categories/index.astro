@@ -1,0 +1,77 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getCollection } from 'astro:content';
+import { CATEGORIES, type CategoryId } from '../../constants/categories';
+
+const posts = await getCollection('blog', ({ data }) => {
+  return import.meta.env.PROD ? !data.draft : true;
+});
+
+posts.sort((a, b) => b.data.pubDatetime.getTime() - a.data.pubDatetime.getTime());
+
+const postsByCategory = Object.fromEntries(
+  CATEGORIES.map((category) => [
+    category.id,
+    posts.filter((post) => post.data.category === category.id),
+  ])
+) as Record<CategoryId, typeof posts>;
+---
+
+<Layout
+  title="Categories"
+  description="dukjoon.github.io 카테고리 아카이브: AI Engineering, System, Trend, Law, Study"
+>
+  <section class="space-y-8">
+    <div class="space-y-2">
+      <h1 class="text-2xl font-bold text-white tracking-tight">Categories</h1>
+      <p class="text-sm text-gray-400">
+        엔지니어링 로그, 트렌드 분석, 법률 도메인 설계 및 향후 학술 자료 아카이브 구조입니다.
+      </p>
+    </div>
+
+    <div class="grid gap-4">
+      {CATEGORIES.map((category) => {
+        const categoryPosts = postsByCategory[category.id];
+        const count = categoryPosts.length;
+        const latestPost = categoryPosts[0];
+
+        return (
+          <a
+            href={`/categories/${category.id}/`}
+            class="block rounded-lg border border-gray-800 bg-[#161b22]/60 p-5 hover:border-blue-500/70 transition group"
+          >
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex items-center gap-2">
+                <h2 class="text-lg font-semibold text-white group-hover:text-blue-400 transition font-mono">
+                  {category.label}
+                </h2>
+                {category.reserved && count === 0 && (
+                  <span class="text-[10px] font-mono uppercase tracking-wider text-gray-400 bg-gray-800/80 border border-gray-700 px-1.5 py-0.5 rounded">
+                    Reserved
+                  </span>
+                )}
+              </div>
+              <span class="text-xs font-mono tabular-nums text-gray-400 bg-[#0d1117] border border-gray-800 px-2 py-0.5 rounded">
+                {count} {count === 1 ? 'post' : 'posts'}
+              </span>
+            </div>
+
+            <p class="text-sm text-gray-400 mt-2 leading-relaxed">
+              {category.description}
+            </p>
+
+            {latestPost ? (
+              <p class="text-xs font-mono text-gray-500 mt-3 truncate">
+                Latest: {latestPost.data.pubDatetime.toISOString().slice(0, 10)} — {latestPost.data.title}
+              </p>
+            ) : (
+              <p class="text-xs font-mono text-gray-500 mt-3">
+                {category.emptyMessage}
+              </p>
+            )}
+          </a>
+        );
+      })}
+    </div>
+  </section>
+</Layout>

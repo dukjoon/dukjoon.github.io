@@ -1,9 +1,12 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { getCollection } from 'astro:content';
+import { CATEGORY_MAP } from '../../constants/categories';
 
 export async function getStaticPaths() {
-  const posts = await getCollection('blog');
+  const posts = await getCollection('blog', ({ data }) => {
+    return import.meta.env.PROD ? !data.draft : true;
+  });
   return posts.map((post) => ({
     params: { slug: post.slug },
     props: { post },
@@ -12,15 +15,22 @@ export async function getStaticPaths() {
 
 const { post } = Astro.props;
 const { Content } = await post.render();
+const categoryMeta = CATEGORY_MAP[post.data.category];
 ---
 
 <Layout title={post.data.title} description={post.data.description}>
   <article class="max-w-none">
     <header class="mb-8 border-b border-gray-800 pb-6">
-      <div class="flex items-center gap-2 text-xs text-gray-400 tabular-nums mb-2 font-mono">
+      <div class="flex flex-wrap items-center gap-2 text-xs text-gray-400 tabular-nums mb-2 font-mono">
         <time datetime={post.data.pubDatetime.toISOString()}>
           {post.data.pubDatetime.toISOString().slice(0, 10)}
         </time>
+        <a
+          href={`/categories/${categoryMeta.id}/`}
+          class="text-xs font-mono text-emerald-400 bg-emerald-950/40 border border-emerald-900/50 px-1.5 py-0.5 rounded hover:border-emerald-700 transition"
+        >
+          {categoryMeta.label}
+        </a>
         {post.data.draft && (
           <span class="bg-yellow-900/60 text-yellow-300 px-1.5 py-0.5 rounded text-[10px] font-mono">
             DRAFT
