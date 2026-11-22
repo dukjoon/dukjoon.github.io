@@ -2,6 +2,7 @@
 title: "dukjoon.github.io 엔지니어링 로그 시작"
 pubDatetime: 2026-11-22T00:00:00Z
 description: "로컬 작업 메모와 커밋 로그 기반 멀티채널 자동화 파이프라인의 아키텍처 및 엔지니어링 로그를 기록하는 공간입니다."
+category: ai-engineering
 tags:
   - engineering
   - architecture

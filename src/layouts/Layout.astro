@@ -7,6 +7,9 @@ interface Props {
 }
 
 const { title, description = 'Dukjoon Engineering & Architecture Log' } = Astro.props;
+const pathname = Astro.url.pathname;
+const isPostsActive = pathname === '/' || pathname.startsWith('/posts/');
+const isCategoriesActive = pathname === '/categories' || pathname.startsWith('/categories/');
 ---
 
 <!doctype html>
@@ -28,8 +31,26 @@ const { title, description = 'Dukjoon Engineering & Architecture Log' } = Astro.
           <p class="text-xs text-gray-400 mt-1 font-mono">Autonomous Systems & Engineering Log</p>
         </div>
         <nav class="flex gap-4 text-sm text-gray-400">
-          <a href="/" class="hover:text-white transition">Posts</a>
-          <a href="https://github.com/dukjoon" target="_blank" rel="noreferrer" class="hover:text-white transition">GitHub</a>
+          <a
+            href="/"
+            class:list={['hover:text-white transition', { 'text-white font-medium': isPostsActive }]}
+          >
+            Posts
+          </a>
+          <a
+            href="/categories/"
+            class:list={['hover:text-white transition', { 'text-white font-medium': isCategoriesActive }]}
+          >
+            Categories
+          </a>
+          <a
+            href="https://github.com/dukjoon"
+            target="_blank"
+            rel="noreferrer"
+            class="hover:text-white transition"
+          >
+            GitHub
+          </a>
         </nav>
       </header>
       <main class="flex-1">
