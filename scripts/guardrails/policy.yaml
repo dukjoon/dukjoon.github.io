@@ -1,0 +1,87 @@
+version: "1.1"
+pipeline_name: "Multi-Channel Content Engine"
+
+# 1. Publish Lock Guardrail
+publish_lock:
+  default_status: "pending_review"
+  require_explicit_approval: true
+  # Hard Gate tags block approval. Soft Warning tags do not block approval.
+  blocking_tags:
+    - "[검수필요"
+  warning_tags:
+    - "[문체점검"
+
+# 2. Fact Anchoring & Hard Gate Rules
+fact_anchoring:
+  flag_unverified_metrics: true
+  # Unverified absolute assertions (Hard Gate)
+  unverified_claims_patterns:
+    - "100% 보장"
+    - "완벽하게 해결"
+    - "모든 상황에서"
+    - "업계 최초"
+    - "절대적인"
+    - "단 한 번의 오류도 없이"
+
+# 3. Anti-AI-Tone & Auto-Trim Rules
+anti_ai_tone:
+  # Cliche phrases automatically removed during post-balancing (Auto-Trim, no tag clutter)
+  auto_trim_phrases:
+    - "도움이 되셨길 바랍니다"
+    - "도움이 되었으면 좋겠습니다"
+    - "오늘은 .*?에 대해 알아보겠습니다"
+    - "결론적으로 말씀드리면"
+    - "결론적으로,"
+    - "지금까지 .*?에 대해 살펴보았습니다"
+    - "많은 도움이 되시길 바랍니다"
+    - "다음 시간에 더 유익한 정보로 찾아뵙겠습니다"
+
+  # Channel-specific rules
+  channels:
+    git:
+      soft_warn_adjectives:
+        - "혁신적인"
+        - "놀라운"
+        - "압도적인"
+        - "획기적인"
+        - "마법 같은"
+        - "경이로운"
+      max_emoji_per_line: 0
+      ignore_code_blocks: true
+
+    naver:
+      soft_warn_adjectives:
+        - "혁신적인"
+        - "혁명적인"
+        - "마법 같은"
+      max_emoji_per_line: 2
+      ignore_code_blocks: true
+
+    shortform:
+      # Shortform allows conversational hooks to catch viewer attention
+      soft_warn_adjectives: []
+      max_emoji_per_line: 2
+      ignore_code_blocks: true
+      # Banned boring lecture-style openings (Hard Block for shortform 0-3s hook)
+      banned_openings:
+        - "^안녕하세요"
+        - "^오늘은"
+        - "^여러분"
+
+# 4. R4 Privacy, Path & Domain Leak Rules
+r4_privacy:
+  allowed_email_domains:
+    - "example.com"
+    - "example.org"
+    - "test.com"
+    - "localhost"
+    - "users.noreply.github.com"
+  allowed_path_users:
+    - "user"
+    - "username"
+    - "ubuntu"
+    - "runner"
+    - "app"
+    - "developer"
+    - "your-name"
+  extra_blocked_terms: []

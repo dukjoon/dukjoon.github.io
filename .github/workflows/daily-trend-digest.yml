@@ -1,0 +1,122 @@
+name: Daily Trend Digest Draft PR
+
+on:
+  schedule:
+    # Runs daily at 15:45 UTC (00:45 KST), 32 minutes after idea-capture's 00:13 KST daily report
+    - cron: "45 15 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: "daily-trend-digest"
+  cancel-in-progress: false
+
+jobs:
+  sync-and-open-draft-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout dukjoon.github.io (main)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Checkout dukjoon/idea-capture
+        uses: actions/checkout@v4
+        with:
+          repository: dukjoon/idea-capture
+          path: _idea_capture
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: python -m pip install pyyaml
+
+      - name: Extract per-date Trend bundles from idea-capture
+        run: |
+          python3 scripts/extract_trend_bundles.py \
+            --idea-capture-dir _idea_capture \
+            --out-dir /tmp/trend_bundles
+
+      - name: Generate missing daily (3) Trend digest posts
+        run: |
+          python3 scripts/generate_trend_digests.py \
+            --bundles-dir /tmp/trend_bundles \
+            --blog-dir src/content/blog
+
+      - name: Remove temporary _idea_capture checkout
+        run: rm -rf _idea_capture
+
+      - name: Check for newly generated Trend digest posts
+        id: check_new
+        run: |
+          NEW_FILES=$(git status --porcelain src/content/blog/ | awk '{print $2}' | tr '\n' ' ')
+          if [ -z "$NEW_FILES" ]; then
+            echo "has_new=false" >> "$GITHUB_OUTPUT"
+            echo "No new Trend digest dates to publish."
+          else
+            COUNT=$(git status --porcelain src/content/blog/ | wc -l | tr -d ' ')
+            LATEST_DATE=$(ls src/content/blog/*_trend-digest.md | sed 's/.*\///;s/_trend-digest.md//' | sort | tail -n 1)
+            echo "has_new=true" >> "$GITHUB_OUTPUT"
+            echo "new_count=$COUNT" >> "$GITHUB_OUTPUT"
+            echo "latest_date=$LATEST_DATE" >> "$GITHUB_OUTPUT"
+            echo "Detected $COUNT new Trend digest post(s) (latest: $LATEST_DATE)."
+          fi
+
+      - name: Run strict R4Validator across all blog posts
+        if: steps.check_new.outputs.has_new == 'true'
+        run: |
+          python3 scripts/guardrails/r4_validator.py --strict --strict-desc src/content/blog/*.md
+
+      - name: Setup Node
+        if: steps.check_new.outputs.has_new == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Verify Astro static build
+        if: steps.check_new.outputs.has_new == 'true'
+        run: |
+          npm ci
+          npm run build
+
+      - name: Commit, push draft branch, and open/update Draft PR
+        if: steps.check_new.outputs.has_new == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEW_COUNT: ${{ steps.check_new.outputs.new_count }}
+          LATEST_DATE: ${{ steps.check_new.outputs.latest_date }}
+        run: |
+          set -e
+          BRANCH="draft/auto-trend-digest-${LATEST_DATE}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git checkout -B "$BRANCH"
+          git add src/content/blog/*_trend-digest.md
+          git commit -m "docs(blog): auto-generate ${NEW_COUNT} daily (3) Trend digest post(s) through ${LATEST_DATE}"
+          git push -u origin "$BRANCH" --force
+
+          PR_TITLE="docs(blog): Daily (3) Trend Digest Auto-Sync (${NEW_COUNT} post(s) through ${LATEST_DATE})"
+          PR_BODY="## Automated Daily \`(3) Trend\` Digest Sync (through \`${LATEST_DATE}\`)
+
+          - **New Posts Added**: **${NEW_COUNT}** daily \`(3) Trend\` digest post(s) synced from \`dukjoon/idea-capture\`.
+          - **Quality & Safety Verification**:
+            - \`R4Validator (--strict --strict-desc)\`: Passed (0 errors, 0 warnings, \`(5) Study\` reserved at 0 posts)
+            - \`npm run build\`: Astro static build passed
+          - **Human-in-the-Loop**: Opened as a **Draft PR** (\`--draft\`). Review and click **[Ready for review]** -> **[Merge pull request]** to publish live to \`https://dukjoon.github.io\`."
+
+          gh pr create \
+            --draft \
+            --base main \
+            --head "$BRANCH" \
+            --title "$PR_TITLE" \
+            --body "$PR_BODY" || \
+          gh pr view "$BRANCH" --json url -q .url
